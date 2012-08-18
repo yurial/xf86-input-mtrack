@@ -47,6 +47,8 @@ struct Touch {
 
 struct MTState {
 	bitmask_t state;
+	struct Touch saved_touch[DIM_TOUCHES];
+	bitmask_t saved_touch_used;
 	struct Touch touch[DIM_TOUCHES];
 	bitmask_t touch_used;
 };

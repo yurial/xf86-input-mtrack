@@ -25,6 +25,7 @@
  *
  **************************************************************************/
 
+#include <signal.h>
 #include "gestures.h"
 #include "mtouch.h"
 #include "trig.h"
@@ -630,33 +631,67 @@ static int get_swipe4_dir(const struct Touch* t1,
 	return trig_generalize(trig_angles_avg(angles, 4));
 }
 
-static void moving_update(struct Gestures* gs,
-			const struct MConfig* cfg,
-			struct MTState* ms)
+static void moving_clear_saved(struct MTState* ms)
 {
-	int i, count, btn_count, dx, dy, dir;
+	int i;
+	foreach_bit(i, ms->saved_touch_used) {
+		struct Touch* t = &ms->saved_touch[i];
+		memset( t, 0, sizeof(struct Touch) );
+	}
+	ms->saved_touch_used = 0;
+}
+
+static void moving_save(struct MTState* ms)
+{
+	int i;
+	foreach_bit(i, ms->touch_used)
+		ms->saved_touch[i] = ms->touch[i];
+	ms->saved_touch_used = ms->touch_used;
+}
+
+static void print_touch(struct Touch* touch,
+			bitmask_t touch_used)
+{
+	int i;	
+	foreach_bit(i, touch_used) {
+		struct Touch* t = &touch[i];
+		fprintf( stderr, "t%d: d: %lf, s: %d\n", i, t->direction, t->state );
+	}
+}
+
+static void moving_process(struct Gestures* gs,
+			const struct MConfig* cfg,
+			struct Touch* touch,
+			bitmask_t touch_used
+			)
+{
+	int i, count, btn_count, dir, dx, dy;
 	double dist;
 	struct Touch* touches[4];
-	count = btn_count = 0;
-	dx = dy = 0;
 	dir = 0;
+	dist = 0.0;
+	dx = dy = 0;
+	count = btn_count = 0;
 
 	// Reset movement.
 	gs->move_dx = 0;
 	gs->move_dy = 0;
 
+//	fprintf( stderr, "process:\n" );
+//	print_touch( touch, touch_used );
+//	fprintf( stderr, "\n" );
 	// Count touches and aggregate touch movements.
-	foreach_bit(i, ms->touch_used) {
-		if (GETBIT(ms->touch[i].state, MT_INVALID))
+	foreach_bit(i, touch_used) {
+		if (GETBIT(touch[i].state, MT_INVALID))
 			continue;
-		else if (GETBIT(ms->touch[i].flags, GS_BUTTON)) {
+		else if (GETBIT(touch[i].flags, GS_BUTTON)) {
 			btn_count++;
-			dx += ms->touch[i].dx;
-			dy += ms->touch[i].dy;
+			dx += touch[i].dx;
+			dy += touch[i].dy;
 		}
-		else if (!GETBIT(ms->touch[i].flags, GS_TAP)) {
+		else if (!GETBIT(touch[i].flags, GS_TAP)) {
 			if (count < 4)
-				touches[count++] = &ms->touch[i];
+				touches[count++] = &touch[i];
 		}
 	}
 
@@ -670,6 +705,9 @@ static void moving_update(struct Gestures* gs,
 	else if (count == 1 && cfg->trackpad_disable < 2) {
 		dx += touches[0]->dx;
 		dy += touches[0]->dy;
+		dist = hypot( dx, dy );
+		fprintf( stderr, "m  distance: %lf\n", dist );
+		fprintf( stderr, "dx: %d, dy: %d\n", dx, dy );
 		trigger_move(gs, cfg, dx, dy);
 	}
 	else if (count == 2 && cfg->trackpad_disable < 1) {
@@ -707,6 +745,65 @@ static void moving_update(struct Gestures* gs,
 			trigger_swipe(gs, cfg, dist/4, dir, 1);
 		}
 	}
+}
+
+static void moving_update(struct Gestures* gs,
+			const struct MConfig* cfg,
+			struct MTState* ms)
+{
+	int i, count, broken, direct;
+	direct = count = broken = 0;
+
+	
+//	fprintf( stderr, "update:\n" );
+//	print_touch( ms->touch, ms->touch_used );
+
+	foreach_bit(i, ms->touch_used) {
+		struct Touch* t = &ms->touch[i];
+		if (GETBIT(t->state, MT_INVALID)) {
+			ms->touch_used &= ~(1 << i);
+			continue;
+		}
+		++count;
+		if (t->state)
+			direct = 1;
+		if (!GETBIT(t->flags, GS_TAP) && 0 > t->direction)
+			++broken;
+	}
+	if (!broken || direct || count == broken) {
+		moving_clear_saved( ms );
+		moving_process(gs, cfg, ms->touch, ms->touch_used);
+		return;
+	}
+	else {
+		if (ms->saved_touch_used == ms->touch_used) {
+//			fprintf( stderr, "saved\n" );
+//			print_touch( ms->saved_touch, ms->saved_touch_used );
+			foreach_bit(i, ms->touch_used) {
+				struct Touch* t;
+				struct Touch* p_t;
+				t = &ms->touch[i];
+				p_t = &ms->saved_touch[i];
+				if (0.0 > t->direction && 0.0 <= p_t->direction) {
+					t->direction = p_t->direction;
+					--broken;
+				}
+				t->dx += p_t->dx;
+				t->dy += p_t->dy;
+			}
+			//clear saved
+			moving_clear_saved( ms );
+			if (0 < broken)
+				moving_save( ms );
+			else
+				moving_process( gs, cfg, ms->touch, ms->touch_used );
+		}
+		else {
+			moving_clear_saved( ms );
+			moving_save( ms );
+		}
+	}
+//	fprintf( stderr, "\n" );
 }
 
 static void dragging_update(struct Gestures* gs)
