@@ -19,6 +19,7 @@
  *
  **************************************************************************/
 
+#include <signal.h>
 #include "hwstate.h"
 
 void hwstate_init(struct HWState *s, const struct Capabilities *caps)
@@ -50,60 +51,119 @@ static int read_event(struct HWState *s, const struct Capabilities *caps,
 {
 	switch (ev->type) {
 	case EV_SYN:
+		//fprintf( stderr, "EV_SYN\n" );
 		switch (ev->code) {
 		case SYN_REPORT:
+			fprintf( stderr, "  SYN_REPORT\n" );
 			finish_packet(s, caps, ev);
 			return 1;
+			break;
+		default:
+			fprintf( stderr, "  UNHANDLED: %d\n", ev->code );
 		}
 		break;
 	case EV_KEY:
+		//fprintf( stderr, "EV_KEY\n" );
 		switch (ev->code) {
 		case BTN_LEFT:
+			fprintf( stderr, "  BTN_LEFT %d\n", ev->value );
 			MODBIT(s->button, MT_BUTTON_LEFT, ev->value);
+			MODBIT(s->button_changed, MT_BUTTON_LEFT, 1);
 			break;
 		case BTN_MIDDLE:
+			fprintf( stderr, "  BTN_MIDDLE %d\n", ev->value );
 			MODBIT(s->button, MT_BUTTON_MIDDLE, ev->value);
+			MODBIT(s->button_changed, MT_BUTTON_MIDDLE, 1);
 			break;
 		case BTN_RIGHT:
+			fprintf( stderr, "  BTN_RIGHT %d\n", ev->value );
 			MODBIT(s->button, MT_BUTTON_RIGHT, ev->value);
+			MODBIT(s->button_changed, MT_BUTTON_RIGHT, 1);
 			break;
+		case BTN_TOUCH:
+			fprintf( stderr, "  BTN_TOUCH %d\n", ev->value );
+			break;
+		case BTN_TOOL_FINGER:
+			fprintf( stderr, "  BTN_TOOL_FINGER %d\n", ev->value );
+			break;
+		case BTN_TOOL_DOUBLETAP:
+			fprintf( stderr, "  BTN_TOOL_DOUBLETAP %d\n", ev->value );
+			break;
+		case BTN_TOOL_TRIPLETAP:
+			fprintf( stderr, "  BTN_TOOL_TRIPLETAP %d\n", ev->value );
+			break;
+		case BTN_TOOL_QUADTAP:
+			fprintf( stderr, "  BTN_TOOL_QUADTAP %d\n", ev->value );
+			break;
+		default:
+			fprintf( stderr, "  UNHANDLED: %d\n", ev->code );
 		}
 		break;
 	case EV_ABS:
+		//fprintf( stderr, "EV_ABS\n" );
 		switch (ev->code) {
 		case ABS_MT_SLOT:
+			fprintf( stderr, "  ABS_MT_SLOT %d\n", ev->value );
 			if (ev->value >= 0 && ev->value < DIM_FINGER)
 				s->slot = ev->value;
 			break;
 		case ABS_MT_TOUCH_MAJOR:
+			fprintf( stderr, "  ABS_MT_TOUCH_MAJOR %d\n", ev->value );
 			s->data[s->slot].touch_major = ev->value;
 			break;
 		case ABS_MT_TOUCH_MINOR:
+			fprintf( stderr, "  ABS_MT_TOUCH_MINOR %d\n", ev->value );
 			s->data[s->slot].touch_minor = ev->value;
 			break;
 		case ABS_MT_WIDTH_MAJOR:
+			fprintf( stderr, "  ABS_MT_WIDTH_MAJOR %d\n", ev->value );
 			s->data[s->slot].width_major = ev->value;
 			break;
 		case ABS_MT_WIDTH_MINOR:
+			fprintf( stderr, "  ABS_MT_WIDTH_MINOR %d\n", ev->value );
 			s->data[s->slot].width_minor = ev->value;
 			break;
 		case ABS_MT_ORIENTATION:
+			fprintf( stderr, "  ABS_MT_OPERATION %d\n", ev->value );
 			s->data[s->slot].orientation = ev->value;
 			break;
 		case ABS_MT_PRESSURE:
+			fprintf( stderr, "  ABS_MT_PRESSURE %d\n", ev->value );
 			s->data[s->slot].pressure = ev->value;
 			break;
 		case ABS_MT_POSITION_X:
+			fprintf( stderr, "  ABS_MT_POSITION_X %d\n", ev->value );
 			s->data[s->slot].position_x = ev->value;
 			break;
 		case ABS_MT_POSITION_Y:
+			fprintf( stderr, "  ABS_MT_POSITION_Y %d\n", ev->value );
 			s->data[s->slot].position_y = ev->value;
 			break;
 		case ABS_MT_TRACKING_ID:
+			fprintf( stderr, "  ABS_MT_TRACKING_ID %d\n", ev->value );
 			s->data[s->slot].tracking_id = ev->value;
 			MODBIT(s->used, s->slot, ev->value != MT_ID_NULL);
 			break;
+		case ABS_X:
+			fprintf( stderr, "  ABS_X %d\n", ev->value );
+			break;
+		case ABS_Y:
+			fprintf( stderr, "  ABS_Y %d\n", ev->value );
+			break;
+		case ABS_PRESSURE:
+			fprintf( stderr, "  ABS_PRESSURE %d\n", ev->value );
+			break;
+		case ABS_TOOL_WIDTH:
+			fprintf( stderr, "  ABS_TOOL_WIDTH %d\n", ev->value );
+			break;
+		default:
+			fprintf( stderr, "  UNHANDLED: %d\n", ev->code );
+			break;
 		}
+		MODBIT(s->changed, s->slot, 1);
+		break;
+	default:
+		fprintf( stderr, "UNHANDLED: %d\n", ev->type );
 		break;
 	}
 	return 0;

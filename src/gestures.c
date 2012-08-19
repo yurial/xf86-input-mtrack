@@ -630,6 +630,16 @@ static int get_swipe4_dir(const struct Touch* t1,
 	return trig_generalize(trig_angles_avg(angles, 4));
 }
 
+static void print_touch(struct Touch* touch,
+bitmask_t touch_used)
+{
+int i;	
+foreach_bit(i, touch_used) {
+	struct Touch* t = &touch[i];
+	fprintf( stderr, "t%d: d: %lf, s: %d\n", i, t->direction, t->state );
+	}
+}
+
 static void moving_update(struct Gestures* gs,
 			const struct MConfig* cfg,
 			struct MTState* ms)
@@ -637,6 +647,8 @@ static void moving_update(struct Gestures* gs,
 	int i, count, btn_count, dx, dy, dir;
 	double dist;
 	struct Touch* touches[4];
+	print_touch( ms->touch, ms->touch_used );
+	fprintf( stderr, "\n" );
 	count = btn_count = 0;
 	dx = dy = 0;
 	dir = 0;

@@ -20,6 +20,7 @@
  *
  **************************************************************************/
 
+#include <signal.h>
 #include "mtouch.h"
 
 static const int use_grab = 0;
@@ -76,8 +77,14 @@ int mtouch_read(struct MTouch* mt)
 	int ret = hwstate_modify(&mt->hs, &mt->dev, mt->fd, &mt->caps);
 	if (ret <= 0)
 		return ret;
-	mtstate_extract(&mt->state, &mt->cfg, &mt->hs, &mt->caps);
-	gestures_extract(mt);
+	fprintf( stderr, "u: %d, c: %d\n", mt->hs.used, mt->hs.changed );
+	if ( mt->hs.changed >= mt->hs.used || 0 != mt->hs.button_changed ) {
+		fprintf( stderr, "do\n" );
+		mtstate_extract(&mt->state, &mt->cfg, &mt->hs, &mt->caps);
+		gestures_extract(mt);
+		mt->hs.changed = 0;
+		mt->hs.button_changed = 0;
+	}
 	return 1;
 }
 

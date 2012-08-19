@@ -322,7 +322,6 @@ void mtstate_extract(struct MTState* ms,
 			const struct Capabilities* caps)
 {
 	ms->state = 0;
-
 	touches_clean(ms);
 	touches_update(ms, cfg, hs, caps);
 
