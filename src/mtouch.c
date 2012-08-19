@@ -73,11 +73,19 @@ int mtouch_close(struct MTouch* mt)
 
 int mtouch_read(struct MTouch* mt)
 {
+    int is_all_changed, is_count_changed, is_button_changed;
 	int ret = hwstate_modify(&mt->hs, &mt->dev, mt->fd, &mt->caps);
 	if (ret <= 0)
 		return ret;
-	mtstate_extract(&mt->state, &mt->cfg, &mt->hs, &mt->caps);
-	gestures_extract(mt);
+    is_all_changed = mt->hs.used_changed == mt->hs.used;
+    is_count_changed = ~mt->state.touch_used & mt->hs.used_changed || mt->state.touch_used != mt->hs.used;;
+    is_button_changed = 0 != mt->hs.button_changed;
+	if (is_all_changed || is_count_changed || is_button_changed) {
+		mtstate_extract(&mt->state, &mt->cfg, &mt->hs, &mt->caps);
+		gestures_extract(mt);
+		mt->hs.used_changed = 0;
+		mt->hs.button_changed = 0;
+	}
 	return 1;
 }
 

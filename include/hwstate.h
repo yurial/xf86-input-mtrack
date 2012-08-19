@@ -38,6 +38,8 @@ struct HWState {
 	bitmask_t used;
 	bitmask_t slot;
 	bitmask_t button;
+	bitmask_t used_changed;
+	bitmask_t button_changed;
 	int max_x, max_y;
 	struct timeval evtime;
 };
