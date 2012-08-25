@@ -386,21 +386,23 @@ static void trigger_move(struct Gestures* gs,
 			const struct MConfig* cfg,
 			int dx, int dy)
 {
-	if ((gs->move_type == GS_MOVE || !timercmp(&gs->time, &gs->move_wait, <)) && (dx != 0 || dy != 0)) {
-		if (trigger_drag_start(gs, cfg, dx, dy)) {
-			gs->move_dx = (int)(dx*cfg->sensitivity);
-			gs->move_dy = (int)(dy*cfg->sensitivity);
-			gs->move_type = GS_MOVE;
-			gs->move_dist = 0;
-			gs->move_dir = TR_NONE;
-			gs->move_speed = hypot(gs->move_dx, gs->move_dy)/timertomicro(&gs->dt);
-			timerclear(&gs->move_wait);
-#ifdef DEBUG_GESTURES
-			xf86Msg(X_INFO, "trigger_move: %d, %d (speed %f)\n",
-				gs->move_dx, gs->move_dy, gs->move_speed);
-#endif
-		}
-	}
+    if (!GETBIT(cfg->sliding, 0) || !gs->sliding)
+        if ((gs->move_type == GS_MOVE || !timercmp(&gs->time, &gs->move_wait, <)) && (dx != 0 || dy != 0)) {
+            gs->sliding = 1;
+            if (trigger_drag_start(gs, cfg, dx, dy)) {
+                gs->move_dx = (int)(dx*cfg->sensitivity);
+                gs->move_dy = (int)(dy*cfg->sensitivity);
+                gs->move_type = GS_MOVE;
+                gs->move_dist = 0;
+                gs->move_dir = TR_NONE;
+                gs->move_speed = hypot(gs->move_dx, gs->move_dy)/timertomicro(&gs->dt);
+                timerclear(&gs->move_wait);
+    #ifdef DEBUG_GESTURES
+                xf86Msg(X_INFO, "trigger_move: %d, %d (speed %f)\n",
+                    gs->move_dx, gs->move_dy, gs->move_speed);
+    #endif
+            }
+        }
 }
 
 static void trigger_scroll(struct Gestures* gs,
@@ -420,18 +422,20 @@ static void trigger_scroll(struct Gestures* gs,
 		gs->move_speed = dist/timertomicro(&gs->dt);
 		timeraddms(&gs->time, cfg->gesture_wait, &gs->move_wait);
 
-		if (gs->move_dist >= cfg->scroll_dist) {
-			gs->move_dist = MODVAL(gs->move_dist, cfg->scroll_dist);
-			timeraddms(&gs->time, cfg->gesture_hold, &tv_tmp);
-			if (dir == TR_DIR_UP)
-				trigger_button_click(gs, cfg->scroll_up_btn - 1, &tv_tmp);
-			else if (dir == TR_DIR_DN)
-				trigger_button_click(gs, cfg->scroll_dn_btn - 1, &tv_tmp);
-			else if (dir == TR_DIR_LT)
-				trigger_button_click(gs, cfg->scroll_lt_btn - 1, &tv_tmp);
-			else if (dir == TR_DIR_RT)
-				trigger_button_click(gs, cfg->scroll_rt_btn - 1, &tv_tmp);
-		}
+        if (!GETBIT(cfg->sliding, 1) || !gs->sliding)
+            if (gs->move_dist >= cfg->scroll_dist) {
+                gs->sliding = 1;
+                gs->move_dist = MODVAL(gs->move_dist, cfg->scroll_dist);
+                timeraddms(&gs->time, cfg->gesture_hold, &tv_tmp);
+                if (dir == TR_DIR_UP)
+                    trigger_button_click(gs, cfg->scroll_up_btn - 1, &tv_tmp);
+                else if (dir == TR_DIR_DN)
+                    trigger_button_click(gs, cfg->scroll_dn_btn - 1, &tv_tmp);
+                else if (dir == TR_DIR_LT)
+                    trigger_button_click(gs, cfg->scroll_lt_btn - 1, &tv_tmp);
+                else if (dir == TR_DIR_RT)
+                    trigger_button_click(gs, cfg->scroll_rt_btn - 1, &tv_tmp);
+            }
 #ifdef DEBUG_GESTURES
 		xf86Msg(X_INFO, "trigger_scroll: scrolling %+f in direction %d (at %d of %d) (speed %f)\n",
 			dist, dir, gs->move_dist, cfg->scroll_dist, gs->move_speed);
@@ -458,33 +462,37 @@ static void trigger_swipe(struct Gestures* gs,
 		timeraddms(&gs->time, cfg->gesture_hold, &tv_tmp);
 
 		if (isfour) {
-			if (cfg->swipe4_dist > 0 && gs->move_dist >= cfg->swipe4_dist) {
-				gs->move_dist = MODVAL(gs->move_dist, cfg->swipe4_dist);
-				if (dir == TR_DIR_UP)
-					trigger_button_click(gs, cfg->swipe4_up_btn - 1, &tv_tmp);
-				else if (dir == TR_DIR_DN)
-					trigger_button_click(gs, cfg->swipe4_dn_btn - 1, &tv_tmp);
-				else if (dir == TR_DIR_LT)
-					trigger_button_click(gs, cfg->swipe4_lt_btn - 1, &tv_tmp);
-				else if (dir == TR_DIR_RT)
-					trigger_button_click(gs, cfg->swipe4_rt_btn - 1, &tv_tmp);
-			}
+            if (!GETBIT(cfg->sliding, 3) || !gs->sliding)
+                if (cfg->swipe4_dist > 0 && gs->move_dist >= cfg->swipe4_dist) {
+                    gs->sliding = 1;
+                    gs->move_dist = MODVAL(gs->move_dist, cfg->swipe4_dist);
+                    if (dir == TR_DIR_UP)
+                        trigger_button_click(gs, cfg->swipe4_up_btn - 1, &tv_tmp);
+                    else if (dir == TR_DIR_DN)
+                        trigger_button_click(gs, cfg->swipe4_dn_btn - 1, &tv_tmp);
+                    else if (dir == TR_DIR_LT)
+                        trigger_button_click(gs, cfg->swipe4_lt_btn - 1, &tv_tmp);
+                    else if (dir == TR_DIR_RT)
+                        trigger_button_click(gs, cfg->swipe4_rt_btn - 1, &tv_tmp);
+                }
 #ifdef DEBUG_GESTURES
 			xf86Msg(X_INFO, "trigger_swipe4: swiping %+f in direction %d (at %d of %d) (speed %f)\n",
 				dist, dir, gs->move_dist, cfg->swipe_dist, gs->move_speed);
 #endif
 		}
 		else {
-			if (cfg->swipe_dist > 0 && gs->move_dist >= cfg->swipe_dist) {
-				gs->move_dist = MODVAL(gs->move_dist, cfg->swipe_dist);
-				if (dir == TR_DIR_UP)
-					trigger_button_click(gs, cfg->swipe_up_btn - 1, &tv_tmp);
-				else if (dir == TR_DIR_DN)
-					trigger_button_click(gs, cfg->swipe_dn_btn - 1, &tv_tmp);
-				else if (dir == TR_DIR_LT)
-					trigger_button_click(gs, cfg->swipe_lt_btn - 1, &tv_tmp);
-				else if (dir == TR_DIR_RT)
-					trigger_button_click(gs, cfg->swipe_rt_btn - 1, &tv_tmp);
+            if (!GETBIT(cfg->sliding, 2) || !gs->sliding)
+                if (cfg->swipe_dist > 0 && gs->move_dist >= cfg->swipe_dist) {
+                    gs->sliding = 1;
+                    gs->move_dist = MODVAL(gs->move_dist, cfg->swipe_dist);
+                    if (dir == TR_DIR_UP)
+                        trigger_button_click(gs, cfg->swipe_up_btn - 1, &tv_tmp);
+                    else if (dir == TR_DIR_DN)
+                        trigger_button_click(gs, cfg->swipe_dn_btn - 1, &tv_tmp);
+                    else if (dir == TR_DIR_LT)
+                        trigger_button_click(gs, cfg->swipe_lt_btn - 1, &tv_tmp);
+                    else if (dir == TR_DIR_RT)
+                        trigger_button_click(gs, cfg->swipe_rt_btn - 1, &tv_tmp);
 			}
 #ifdef DEBUG_GESTURES
 			xf86Msg(X_INFO, "trigger_swipe: swiping %+f in direction %d (at %d of %d)\n", dist, dir, gs->move_dist, cfg->swipe_dist);
@@ -709,6 +717,15 @@ static void moving_update(struct Gestures* gs,
 	}
 }
 
+static void sliding_update(struct Gestures* gs,
+                            struct MTState* ms)
+{
+    int i = 0;
+    foreach_bit(i, ms->touch_used)
+        if (GETBIT(ms->touch[i].state, MT_RELEASED))
+            gs->sliding = 0;
+}
+
 static void dragging_update(struct Gestures* gs)
 {
 	if (gs->move_drag == GS_DRAG_READY && timercmp(&gs->time, &gs->move_drag_expire, >)) {
@@ -756,6 +773,7 @@ void gestures_extract(struct MTouch* mt)
 	tapping_update(&mt->gs, &mt->cfg, &mt->state);
 	moving_update(&mt->gs, &mt->cfg, &mt->state);
 	delayed_update(&mt->gs);
+    sliding_update(&mt->gs, &mt->state);
 }
 
 static int gestures_sleep(struct MTouch* mt, const struct timeval* sleep)
