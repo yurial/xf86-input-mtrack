@@ -25,12 +25,16 @@
 
 static int inline percentage(int dividend, int divisor)
 {
-	return (double)dividend / (double)divisor * 100;
+	int p = (double)dividend / (double)divisor * 100;
+    fprintf( stderr, "percentage: %d\n", p );
+    return p;
 }
 
 static int inline touch_range_ratio(const struct MConfig* cfg, int value)
 {
-	return (double)(value - cfg->touch_min) / (double)(cfg->touch_max - cfg->touch_min) * 100;
+	int r = (double)(value - cfg->touch_min) / (double)(cfg->touch_max - cfg->touch_min) * 100;
+    fprintf( stderr, "touch_range_ratio(min %d, max %d): %d\n", cfg->touch_min, cfg->touch_max, value );
+    return r;
 }
 
 /* Check if a finger is touching the trackpad.
