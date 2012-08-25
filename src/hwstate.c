@@ -60,12 +60,15 @@ static int read_event(struct HWState *s, const struct Capabilities *caps,
 		switch (ev->code) {
 		case BTN_LEFT:
 			MODBIT(s->button, MT_BUTTON_LEFT, ev->value);
+			MODBIT(s->button_changed, MT_BUTTON_LEFT, 1);
 			break;
 		case BTN_MIDDLE:
 			MODBIT(s->button, MT_BUTTON_MIDDLE, ev->value);
+			MODBIT(s->button_changed, MT_BUTTON_MIDDLE, 1);
 			break;
 		case BTN_RIGHT:
 			MODBIT(s->button, MT_BUTTON_RIGHT, ev->value);
+			MODBIT(s->button_changed, MT_BUTTON_RIGHT, 1);
 			break;
 		}
 		break;
@@ -104,6 +107,7 @@ static int read_event(struct HWState *s, const struct Capabilities *caps,
 			MODBIT(s->used, s->slot, ev->value != MT_ID_NULL);
 			break;
 		}
+		MODBIT(s->used_changed, s->slot, 1);
 		break;
 	}
 	return 0;
