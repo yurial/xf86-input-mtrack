@@ -160,7 +160,7 @@ static int read_event(struct HWState *s, const struct Capabilities *caps,
 			fprintf( stderr, "  UNHANDLED: %d\n", ev->code );
 			break;
 		}
-		MODBIT(s->changed, s->slot, 1);
+		MODBIT(s->used_changed, s->slot, 1);
 		break;
 	default:
 		fprintf( stderr, "UNHANDLED: %d\n", ev->type );

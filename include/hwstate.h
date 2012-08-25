@@ -36,7 +36,7 @@ struct FingerState {
 struct HWState {
 	struct FingerState data[DIM_FINGER];
 	bitmask_t used;
-	bitmask_t changed;
+	bitmask_t used_changed;
 	bitmask_t slot;
 	bitmask_t button;
 	bitmask_t button_changed;

@@ -222,8 +222,10 @@ static void touches_update(struct MTState* ms,
 			else
 				touch_update(ms, cfg, caps, &hs->data[i], n);
 		}
-		else if (is_touch(cfg, &hs->data[i]))
+		else {fprintf( stderr, "new touch!\n" ); if (is_touch(cfg, &hs->data[i]))
+            fprintf( stderr, "append!\n" );
 			n = touch_append(ms, cfg, caps, hs, i);
+            }
 
 		if (n >= 0) {
 			// Track and invalidate thumb, palm, and bottom edge touches.
