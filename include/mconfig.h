@@ -80,6 +80,7 @@
 #define DEFAULT_AXIS_X_INVERT 0
 #define DEFAULT_AXIS_Y_INVERT 0
 #define DEFAULT_SENSITIVITY 1.0
+#define DEFAULT_SLIDING 0
 
 #define MCFG_NONE 0
 #define MCFG_SCALE 1
@@ -162,6 +163,7 @@ struct MConfig {
 	int drag_wait;			// How long to wait before triggering button down? >= 0
 	int drag_dist;			// How far is the finger allowed to move during wait time? >= 0
 	double sensitivity;		// Mouse movement multiplier. >= 0
+    bitmask_t sliding;      // Do sliding for swiping, each bit is a touches count;
 };
 
 /* Load the MConfig struct with its defaults.

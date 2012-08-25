@@ -81,6 +81,8 @@ struct Gestures {
 	struct timeval move_wait;
 	struct timeval move_drag_wait;
 	struct timeval move_drag_expire;
+
+    char sliding; //is sliding trigged
 };
 
 

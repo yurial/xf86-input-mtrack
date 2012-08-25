@@ -77,6 +77,7 @@ void mconfig_defaults(struct MConfig* cfg)
 	cfg->drag_enable = DEFAULT_DRAG_ENABLE;
 	cfg->drag_timeout = DEFAULT_DRAG_TIMEOUT;
 	cfg->sensitivity = DEFAULT_SENSITIVITY;
+    cfg->sliding = DEFAULT_SLIDING;
 }
 
 void mconfig_init(struct MConfig* cfg,
@@ -119,6 +120,8 @@ void mconfig_init(struct MConfig* cfg,
 void mconfig_configure(struct MConfig* cfg,
 			pointer opts)
 {
+    char buff[8];
+    int i;
 	// Configure MTState
 	cfg->touch_down = CLAMPVAL(xf86SetIntOption(opts, "FingerHigh", DEFAULT_TOUCH_DOWN), 0, 100);
 	cfg->touch_up = CLAMPVAL(xf86SetIntOption(opts, "FingerLow", DEFAULT_TOUCH_UP), 0, 100);
@@ -178,5 +181,10 @@ void mconfig_configure(struct MConfig* cfg,
 	cfg->axis_x_invert = xf86SetBoolOption(opts, "AxisXInvert", DEFAULT_AXIS_X_INVERT);
 	cfg->axis_y_invert = xf86SetBoolOption(opts, "AxisYInvert", DEFAULT_AXIS_Y_INVERT);
 	cfg->sensitivity = MAXVAL(xf86SetRealOption(opts, "Sensitivity", DEFAULT_SENSITIVITY), 0);
+    cfg->sliding = DEFAULT_SLIDING;
+    for (i = 0; i < sizeof(bitmask_t) * 8; ++i) { // for each bit
+        snprintf(buff, sizeof(buff), "Slide%u", i + 1);
+        cfg->sliding |= xf86SetBoolOption(opts, buff, DEFAULT_SLIDING) << i;
+    }
 }
 
