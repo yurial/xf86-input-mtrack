@@ -92,6 +92,8 @@ static void trigger_button_click(struct Gestures* gs,
 #ifdef DEBUG_GESTURES
 	else if (IS_VALID_BUTTON(button))
 		xf86Msg(X_INFO, "trigger_button_click: %d ignored, in delayed mode\n", button);
+    else
+        xf86Msg(X_INFO, "trigger_button_click: %d invalid button\n", button);
 #endif
 }
 
